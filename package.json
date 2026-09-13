@@ -7,16 +7,22 @@
   "license": "MIT",
   "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint ."
   },
   "keywords": [],
   "dependencies": {
+    "dotenv": "^17.4.2",
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.5.1",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.6",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.23.13",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "typescript-eslint": "^8.70.0"
   }
 }
