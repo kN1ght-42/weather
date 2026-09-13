@@ -1,6 +1,7 @@
 {
   "name": "weather",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "author": "Artem Direnskiy",
   "license": "MIT",
@@ -13,6 +14,7 @@
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
+    "@types/node": "^26.5.1",
     "ts-node-dev": "^2.0.0",
     "tsx": "^4.23.13"
   }
