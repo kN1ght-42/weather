@@ -1,9 +1,10 @@
 import errorMessage from "../format/error.js";
 import type { CityCoordinates } from "../types/weather.js";
+import "dotenv/config";
 
 async function getCity(city: string) {
   let cityResult = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=ru&format=json`,
+    `${process.env.GEOCODING_URL}?name=${city}&count=1&language=ru&format=json`,
   );
 
   if (!cityResult.ok) {
@@ -28,6 +29,7 @@ async function getCoords(cities: string[]) {
         data.push({
           status: "success",
           city: city.name,
+          country: city.country,
           lat: city.latitude,
           lon: city.longitude,
         });
@@ -36,10 +38,6 @@ async function getCoords(cities: string[]) {
           status: "not-found",
         });
       }
-    } else {
-      data.push({
-        status: "error",
-      });
     }
   });
 
@@ -53,13 +51,14 @@ export default async function getWeather(cities: string[], days: number) {
     cords.map(async (cord) => {
       if (cord.status === "success") {
         const cityResult = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${cord.lat}&longitude=${cord.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=${days}&timezone=auto`,
+          `${process.env.FORECAST_URL}?latitude=${cord.lat}&longitude=${cord.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=${days}&timezone=auto`,
         );
 
         const weather = await cityResult.json();
 
         return {
           city: cord.city,
+          country: cord.country,
           lat: cord.lat,
           lon: cord.lon,
           days: weather.daily.time.map((date: string, index: number) => ({
@@ -70,7 +69,7 @@ export default async function getWeather(cities: string[], days: number) {
           })),
         };
       } else {
-        errorMessage("Ошибка: некорректное название города");
+        console.error(`Ошибка: некорректное название города`);
       }
     }),
   );

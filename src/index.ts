@@ -1,7 +1,8 @@
-import getWeather from "./api/weather-api.js";
 import errorMessage from "./format/error.js";
 import weatherService from "./services/service.js";
+import { cacheFile, fileExists, readFile } from "./storage/storage.js";
 import type { WeatherData, WeatherDays } from "./types/weather.js";
+import "dotenv/config";
 
 const args = process.argv.slice(2);
 
@@ -37,26 +38,51 @@ if (daysArg) {
   }
 }
 
-const data = await weatherService(cities, days);
+let today = new Date().toISOString().split("T")[0];
 
-data.forEach((result) => {
-  if (result.status === "fulfilled") {
-    const weather = result.value;
+async function showWeather(weather: any) {
+  console.log(`\n${weather.city}`);
+  console.log(`\n${weather.country}`);
+  console.log(`Координаты: ${weather.lat}, ${weather.lon}`);
 
-    if (weather !== undefined) {
-      console.log(`\n${weather.city}`);
-      console.log(`Координаты: ${weather.lat}, ${weather.lon}`);
+  console.table(
+    weather.days.map((day: WeatherDays) => ({
+      Дата: day.date,
+      "Мин. °C": day.min,
+      "Макс. °C": day.max,
+      "Осадки, мм": day.precipitation,
+    })),
+  );
+}
 
-      console.table(
-        weather.days.map((day: WeatherDays) => ({
-          Дата: day.date,
-          "Мин. °C": day.min,
-          "Макс. °C": day.max,
-          "Осадки, мм": day.precipitation,
-        })),
+const citiesWithoutCache: string[] = [];
+
+for (const city of cities) {
+  const filePath = `${process.env.REPORTS_DIR}/${city}-${today}.json`;
+
+  if (await fileExists(filePath)) {
+    const data = await readFile(filePath);
+    const weather: WeatherData = JSON.parse(data);
+
+    showWeather(weather);
+  } else {
+    citiesWithoutCache.push(city);
+  }
+}
+
+if (citiesWithoutCache.length > 0) {
+  const data = await weatherService(citiesWithoutCache, days);
+
+  for (const result of data) {
+    if (result.status === "fulfilled" && result.value !== undefined) {
+      const weather = result.value;
+
+      showWeather(weather);
+
+      cacheFile(
+        `${process.env.REPORTS_DIR}/${weather.city}-${today}.json`,
+        weather,
       );
     }
   }
-});
-
-// console.table(table);
+}
