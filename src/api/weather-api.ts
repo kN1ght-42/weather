@@ -1,4 +1,5 @@
-import { CityCoordinates } from "../types/weather";
+import errorMessage from "../format/error.js";
+import type { CityCoordinates } from "../types/weather.js";
 
 async function getCity(city: string) {
   let cityResult = await fetch(
@@ -6,7 +7,7 @@ async function getCity(city: string) {
   );
 
   if (!cityResult.ok) {
-    throw new Error(`API error: ${cityResult.status}`);
+    errorMessage("Ошибка API", cityResult.status);
   }
 
   const data = await cityResult.json();
@@ -14,7 +15,7 @@ async function getCity(city: string) {
   return data;
 }
 
-async function getCords(cities: string[]) {
+async function getCoords(cities: string[]) {
   const results = await Promise.allSettled(cities.map((city) => getCity(city)));
 
   const data: CityCoordinates[] = [];
@@ -37,7 +38,7 @@ async function getCords(cities: string[]) {
       }
     } else {
       data.push({
-        status: "not-found",
+        status: "error",
       });
     }
   });
@@ -45,21 +46,31 @@ async function getCords(cities: string[]) {
   return data;
 }
 
-export default async function getWeather(cities: string[]) {
-  let cords = await getCords(cities);
+export default async function getWeather(cities: string[], days: number) {
+  let cords = await getCoords(cities);
 
   const data = await Promise.allSettled(
     cords.map(async (cord) => {
       if (cord.status === "success") {
         const cityResult = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${cord.lat}&longitude=${cord.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=3&timezone=auto`,
+          `https://api.open-meteo.com/v1/forecast?latitude=${cord.lat}&longitude=${cord.lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&forecast_days=${days}&timezone=auto`,
         );
 
         const weather = await cityResult.json();
 
-        return weather;
+        return {
+          city: cord.city,
+          lat: cord.lat,
+          lon: cord.lon,
+          days: weather.daily.time.map((date: string, index: number) => ({
+            date,
+            min: weather.daily.temperature_2m_min[index],
+            max: weather.daily.temperature_2m_max[index],
+            precipitation: weather.daily.precipitation_sum[index],
+          })),
+        };
       } else {
-        console.log("Ошибка");
+        errorMessage("Ошибка: некорректное название города");
       }
     }),
   );

@@ -1,3 +1,3 @@
-export default function errorMessage(error: String, status: Error) {
-  throw new Error(`Ошибка: ${error}`);
+export default function errorMessage(error: string, status?: number) {
+  throw new Error(`${error}${status ? `: ${status}` : ""}`);
 }
